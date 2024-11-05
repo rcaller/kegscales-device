@@ -14,7 +14,8 @@ import json
 
 
 class HX711KegScale:
-    def __init__(self):
+    def __init__(self, logger):
+        self.logger=logger
         pin_OUT = Pin(0, Pin.IN, pull=Pin.PULL_DOWN)
         pin_SCK = Pin(1, Pin.OUT)
         self.hx = HX711(
@@ -22,6 +23,7 @@ class HX711KegScale:
         )
         self.hx.channel = HX711.CHANNEL_A_64
         self.rollingArray = deque([], 200)
+        self.tempRollingArray = deque([], 200)
         self.calibrationState = 0
         self.zero = 0
         self.full = 20000
@@ -33,17 +35,18 @@ class HX711KegScale:
         try:
             with open('calibration.txt', "r") as f:
                 data = json.load(f)
-                print("data " + str(data))
+                self.logger.log("data " + str(data))
                 self.zero = data["zero"]
-                print("zero " + str(self.zero))
-                self.full = data["full"]
+                self.logger.log("zero " + str(self.zero))
+                self.full = (data["full"] or 1)
                 self.volume = data["volume"]
 
                 self.calibrationState = data["calibrationState"]
-                print("cal state " + str(self.calibrationState))
+                self.logger.log("cal state " + str(self.calibrationState))
         except Exception as e:
-            print("calibration not loaded: " + str(e))
+            self.logger.log("calibration not loaded: " + str(e))
         return self.calibrationState
+
 
     def save_calibration(self):
         os.chdir("/")
@@ -51,9 +54,10 @@ class HX711KegScale:
             data = {"zero": self.zero, "full": self.full, "volume": self.volume, "calibrationState": self.calibrationState}
             with open('calibration.txt', "w", encoding="utf-8") as f:
                 json.dump(data, f)
-                print("calibration saved")
+                self.logger.log("calibration saved - " + str(data))
         except Exception as e:
-            print("calibration save failed "+str(e))
+            self.logger.log("calibration save failed "+str(e))
+        self.rollingArray=deque([], 50)
         return self.calibrationState
 
     def set_zero(self):
@@ -62,7 +66,10 @@ class HX711KegScale:
         self.save_calibration()
 
     def set_full(self):
-        self.full = self.measure()
+        current = self.measure()
+        if current==0:
+            return
+        self.full = current
         self.calibrationState = 2
         self.save_calibration()
 
@@ -93,20 +100,37 @@ class HX711KegScale:
             elif(self.calibrationState ==2):
                 self.reset()
             else:
-                print("Calibration state error")
+                self.logger.log("Calibration state error")
 
-        print("Updating calibration")
+        self.logger.log("Updating calibration")
         return self.calibrationState
 
     def take_measurements(self):
-        self.rollingArray.append(int((self.volume / self.full) * (self.hx.read() - self.zero)))
-        time.sleep(0.1)
+        new = int((self.volume / self.full) * (self.hx.read() - self.zero))
+        if (len(self.rollingArray) < 20):
+            self.rollingArray.append(new)
+            return
+        avg = sum(self.rollingArray) / (len(self.rollingArray))
+        if avg==0:
+            self.rollingArray.append(new)
+            return
+        if abs(((new - avg) / avg))<0.25 or abs(new-avg)<100:
+            self.rollingArray.append(new)
+        else:
+            self.logger.log("Rejected "+str(new) + " - " + str(avg) + " - " + str(abs(((new - avg) / avg))))
+            self.tempRollingArray.append(new)
+            if (len(self.tempRollingArray)>10):
+                self.logger.log("Reset to new value")
+                self.rollingArray = self.tempRollingArray
+                self.tempRollingArray = deque([], 200)
+
+        time.sleep(0.05)
 
 
 
     def measure(self):
         measurement = sum(self.rollingArray)/(len(self.rollingArray)-1)
-        print("Average "+str(measurement))
+        self.logger.log("Average "+str(measurement))
 
         return measurement
 

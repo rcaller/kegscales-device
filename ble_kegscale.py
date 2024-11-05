@@ -1,6 +1,7 @@
 import os
 import bluetooth
 import struct
+from machine import Pin, Timer
 from collections import deque
 from ble_advertising import advertising_payload
 from micropython import const
@@ -51,44 +52,48 @@ _KEGSCALE_SERVICE = (
 
 
 class BLEKegScale:
-    def __init__(self, ble, name="kegscale"):
+    def __init__(self, ble, logger):
+        self.logger = logger
         self._scales = None
         self._calibration_callback = None
         self._ble = ble
         self._ble.active(True)
         self._ble.irq(self._irq)
         ((self._handle_remaining, self._handle_poured, self._handle_calibration_status, self._handle_calibration_volume, self._handle_setcalibration, self._handle_name),) = self._ble.gatts_register_services((_KEGSCALE_SERVICE,))
-
         self._connections = set()
         self._name = self.get_name()
-        self._payload = advertising_payload(name=name, services=[_KEGSCALE_UUID])
-        self._advertise()
+        self._payload = advertising_payload(name="kegscale", services=[_KEGSCALE_UUID])
+
         self._data_history = deque([0]*25, 25)
         self._pouring = False
         self._pour_start = 0
-
-
         self._testData = iter([15000,5000,15000,15000,14990,14980,14950,14930,14920,14910,14900,14900,14900,14900,14900])
-
+        self.led = Pin('LED', Pin.OUT)
+        self.led_state = False
+        self.ledtimer=Timer()
+        self._advertise()
 
     def _irq(self, event, data):
         # Track connections so we can send notifications.
         if event == _IRQ_CENTRAL_CONNECT:
             conn_handle, _, _ = data
-            print("New connection", conn_handle)
+            self.logger.log("New connection " + str(conn_handle))
+            self.stop_flash()
+            self.led.value(True)
             self._connections.add(conn_handle)
         elif event == _IRQ_CENTRAL_DISCONNECT:
             conn_handle, _, _ = data
-            print("Disconnected", conn_handle)
+            self.logger.log("Disconnected "+ str(conn_handle))
             self._connections.remove(conn_handle)
+            self.led.value(False)
             # Start advertising again to allow a new connection.
             self._advertise()
         elif event == _IRQ_GATTS_WRITE:
             conn_handle, attr_handle = data
-            print("Write event "+str(attr_handle))
+            self.logger.log("Write event "+str(attr_handle))
             if (attr_handle == self._handle_setcalibration):
                 data = self._ble.gatts_read(attr_handle).decode()
-                print("Written data " + str(data))
+                self.logger.log("Written data " + str(data))
                 if(str(data) == "update"):
                     calState = self._calibration_callback(str(data))
                     self.set_calibration_state(calState)
@@ -101,7 +106,8 @@ class BLEKegScale:
         return len(self._connections) > 0
 
     def _advertise(self, interval_us=500000):
-        print("Starting advertising")
+        self.logger.log("Starting advertising")
+        self.start_flash()
         self._ble.gap_advertise(interval_us, adv_data=self._payload)
 
     def register_calibration_callback(self, callback):
@@ -109,30 +115,35 @@ class BLEKegScale:
 
 
     def update_remaining(self, data):
-        print("remaining - " + str(data))
-        print("handle - " + str(self._handle_remaining))
-        change = self._data_history[0] - int(data)
+        self.logger.log("remaining - " + str(data))
+        self.logger.log("handle - " + str(self._handle_remaining))
+        change=0
+        if (self._data_history[0]):
+            change = abs((self._data_history[0] - int(data))/self._data_history[0])
         self._data_history.appendleft(int(data))
-        print("change "+str(change))
-        if (change<-(50) or change>(500)) :
-            print("rejected large change")
-            return
+        self.logger.log("change "+str(change))
 
-        if (not self._pouring and (change)>30):
-            print("Pour Started")
+        if (not self._pouring and (change)>0.002):
+            self.logger.log("Pour Started")
             self._pouring = True
             self._pour_start = self._data_history[0]
-        elif (change>30):
-            print("Pouring")
+        if (change>0.002):
+            self.logger.log("Pouring")
             poured_volume = self._pour_start - int(data)
-            if (poured_volume > 50):
+            if (poured_volume > 0):
+                for conn_handle in self._connections:
+                    print("notifying "+ str(conn_handle))
+                    self._ble.gatts_notify(conn_handle, self._handle_poured)
                 self._ble.gatts_write(self._handle_poured, struct.pack(">I", poured_volume), True)
-        elif (self._pouring and change<30) :
+        elif (self._pouring and change<0.002) :
             self._pouring = False
             poured_volume = self._pour_start - int(data)
-            if (poured_volume > 50):
-                self._ble.gatts_write(self._handle_poured, struct.pack(">I", poured_volume), True)
-                print("poured " + str(self._pour_start - int(data)))
+            if (poured_volume > 0):
+                gwo = self._ble.gatts_write(self._handle_poured, struct.pack(">I", poured_volume), True)
+                for conn_handle in self._connections:
+                    print("notifying "+ str(conn_handle))
+                    self._ble.gatts_notify(conn_handle, self._handle_poured)
+                print("poured " + str(self._pour_start - int(data)) + " " + str(gwo))
 
         self._ble.gatts_write(self._handle_remaining, struct.pack(">I", int(data)))
 
@@ -157,25 +168,35 @@ class BLEKegScale:
         try:
             with open('name.txt', "w", encoding="utf-8") as f:
                 f.write(name)
-                print("Name saved")
+                self.logger.log("Name saved")
         except Exception as e:
-            print("Name save failed " + str(e))
+            self.logger.log("Name save failed " + str(e))
 
     def get_name(self):
         os.chdir("/")
         try:
             with open('name.txt', "r", encoding="utf-8") as f:
                 name = f.read()
-                print("Name read")
+                self.logger.log("Name read")
                 return name
         except Exception as e:
-            print("Name read failed " + str(e))
+            self.logger.log("Name read failed " + str(e))
         return "Keg Scale"
 
     def set_name(self):
-        print("Setting name " + str(self._name))
+        self.logger.log("Setting name " + str(self._name))
         self._ble.gatts_write(self._handle_name, self._name.encode("utf-8"))
 
+    def blink_led(self, timer):
+        if self.led_state:
+            self.led.toggle()
 
 
+    def start_flash(self):
+        self.led_state = True
+        self.ledtimer.init(period=500, mode=Timer.PERIODIC, callback=self.blink_led)
 
+    def stop_flash(self):
+        led_state = False
+        self.ledtimer.deinit()  # Stop the timer
+        self.led.value(0)
