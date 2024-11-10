@@ -11,7 +11,7 @@ class OTAUpdater:
     """ This class handles OTA updates. It connects to the Wi-Fi, checks for updates, downloads and installs them."""
 
     def __init__(self, repo_url):
-        self.filename = "README.md"
+        self.filename = "main.py"
 
         self.repo_url = repo_url
         if "www.github.com" in self.repo_url:
