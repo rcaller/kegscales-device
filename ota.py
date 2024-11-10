@@ -1,9 +1,10 @@
-import network
+
 import urequests
 import os
 import json
 import machine
-from time import sleep
+
+
 
 
 class OTAUpdater:
@@ -26,7 +27,7 @@ class OTAUpdater:
         # get the current version (stored in version.json)
         if 'version.json' in os.listdir():
             with open('version.json') as f:
-                self.current_version = int(json.load(f)['version'])
+                self.current_version = json.load(f)['version']
             print(f"Current device firmware version is '{self.current_version}'")
 
         else:
@@ -98,14 +99,17 @@ class OTAUpdater:
         # Turn list to dict using dictionary comprehension
         #         my_dict = {data[i]: data[i + 1] for i in range(0, len(data), 2)}
 
-        self.latest_version = int(data['version'])
+        self.latest_version = data['version']
         print(f'latest version is: {self.latest_version}')
 
         # compare versions
-        newer_version_available = True if self.current_version < self.latest_version else False
+        newer_version_available = True if self.versiontuple(self.current_version) < self.versiontuple(self.latest_version) else False
 
         print(f'Newer version available: {newer_version_available}')
         return newer_version_available
+
+    def versiontuple(self, v):
+        return tuple(map(int, (v.split("."))))
 
     def download_and_install_update_if_available(self):
         """ Check for updates, download and install them."""

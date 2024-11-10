@@ -22,6 +22,6 @@ for network in networks:
 if station.isconnected() == False:
   print("Wifi "+ssid+" not detected")
 else:
-  firmware_url = "https://raw.githubusercontent.com/rcaller/kegscales-device/main"
+  firmware_url = "https://raw.githubusercontent.com/rcaller/kegscales-device/"
   ota = OTAUpdater(firmware_url)
   ota.download_and_install_update_if_available()
