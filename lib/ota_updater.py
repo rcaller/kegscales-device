@@ -148,6 +148,7 @@ class OTAUpdater:
                                                                                        self.main_dir, sub_dir, version)
         gc.collect()
         file_list = self.http_client.get(url)
+        print("Filelist: ", file_list)
         file_list_json = file_list.json()
         for file in file_list_json:
             path = self.modulepath(
