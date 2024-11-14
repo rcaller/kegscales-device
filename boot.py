@@ -1,6 +1,6 @@
 
 from lib.wifi_connector import wifiConnect
-import machine
+import machine, gc
 
 
 def startUp():
