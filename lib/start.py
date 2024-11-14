@@ -1,4 +1,5 @@
-# Import necessary modules
+
+import gc
 import time
 import bluetooth
 import machine
@@ -28,5 +29,7 @@ while True:
     ks.update_remaining(measurement)
     logger.log("Connect attempt")
     logger.connect()
+    gc.collect()
+    logger.log("Memory " + str(gc.mem_free()))
     logger.log("Loop End")
 

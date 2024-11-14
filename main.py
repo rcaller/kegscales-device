@@ -3,4 +3,4 @@ def startUp():
 
 
 
-startUp()
+#startUp()
