@@ -31,7 +31,7 @@ class LogServer:
                 request = str(request)
                 print('Request content = %s' % request)
                 self.conn.send('HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n')
-                self.conn.send("<head></head><body><h1>Kegscales Log</h1><p>")
+                self.conn.send("<head></head><body><h2>Kegscales Log</h2><p>")
                 self.conn.send("<br/>".join(self.log_entries))
 
             except OSError as e:
