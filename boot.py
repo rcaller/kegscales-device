@@ -16,8 +16,9 @@ def update():
         del(otaUpdater)
         gc.collect()
 
-wifiConnect()
-update()
+if wifiConnect():
+    update()
+    pass
 
 startUp()
 

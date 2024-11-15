@@ -1,5 +1,6 @@
 import os, gc
 from .httpclient import HttpClient
+from .logserver import LogServer
 
 
 class OTAUpdater:
@@ -17,6 +18,7 @@ class OTAUpdater:
         self.main_dir = main_dir
         self.new_version_dir = new_version_dir
         self.secrets_file = secrets_file
+        self.logging = LogServer()
 
     def __del__(self):
         self.http_client = None
@@ -37,7 +39,7 @@ class OTAUpdater:
 
         (current_version, latest_version) = self._check_for_new_version()
         if latest_version > current_version:
-            print('New version available, will download and install on next reboot')
+            self.logging.log('New version available, will download and install on next reboot')
             self._create_new_version_file(latest_version)
             return True
 
@@ -56,7 +58,7 @@ class OTAUpdater:
         if self.new_version_dir in os.listdir(self.module):
             if '.version' in os.listdir(self.modulepath(self.new_version_dir)):
                 latest_version = self.get_version(self.modulepath(self.new_version_dir), '.version')
-                print('New update found: ', latest_version)
+                self.logging.log('New update found: ' + str(latest_version))
                 OTAUpdater._using_network(ssid, password)
                 self.install_update_if_available()
                 return True
@@ -78,7 +80,7 @@ class OTAUpdater:
 
         (current_version, latest_version) = self._check_for_new_version()
         if latest_version > current_version:
-            print('Updating to version {}...'.format(latest_version))
+            self.logging.log('Updating to version {}...'.format(latest_version))
             self._create_new_version_file(latest_version)
             self._download_new_version(latest_version)
             self._copy_secrets_file()
@@ -93,20 +95,20 @@ class OTAUpdater:
         import network
         sta_if = network.WLAN(network.STA_IF)
         if not sta_if.isconnected():
-            print('connecting to network...')
+            self.logging.log('connecting to network...')
             sta_if.active(True)
             sta_if.connect(ssid, password)
             while not sta_if.isconnected():
                 pass
-        print('network config:', sta_if.ifconfig())
+        self.logging.log('network config: ' +str(sta_if.ifconfig()))
 
     def _check_for_new_version(self):
         current_version = self.get_version(self.modulepath(self.main_dir))
         latest_version = self.get_latest_version()
 
-        print('Checking version... ')
-        print('\tCurrent version: ', current_version)
-        print('\tLatest version: ', latest_version)
+        self.logging.log('Checking version... ')
+        self.logging.log('\tCurrent version: ' + str(current_version))
+        self.logging.log('\tLatest version: ' + str(latest_version))
         return (current_version, latest_version)
 
     def _create_new_version_file(self, latest_version):
@@ -138,9 +140,9 @@ class OTAUpdater:
         return version
 
     def _download_new_version(self, version):
-        print('Downloading version {}'.format(version))
+        self.logging.log('Downloading version {}'.format(version))
         self._download_all_files(version)
-        print('Version {} downloaded to {}'.format(version, self.modulepath(self.new_version_dir)))
+        self.logging.log('Version {} downloaded to {}'.format(version, self.modulepath(self.new_version_dir)))
 
     def _download_all_files(self, version, sub_dir=''):
         url = 'https://api.github.com/repos/{}/contents{}{}{}?ref=refs/tags/{}'.format(self.github_repo,
@@ -148,7 +150,7 @@ class OTAUpdater:
                                                                                        self.main_dir, sub_dir, version)
         gc.collect()
         file_list = self.http_client.get(url)
-        print("Filelist: ", file_list)
+        self.logging.log("Filelist: " + str(file_list))
         file_list_json = file_list.json()
         for file in file_list_json:
             path = self.modulepath(
@@ -156,10 +158,10 @@ class OTAUpdater:
                                                                                                    ''))
             if file['type'] == 'file':
                 gitPath = file['path']
-                print('\tDownloading: ', gitPath, 'to', path)
+                self.logging.log('\tDownloading: ', gitPath, 'to', path)
                 self._download_file(version, gitPath, path)
             elif file['type'] == 'dir':
-                print('Creating dir', path)
+                self.logging.log('Creating dir', path)
                 self.mkdir(path)
                 self._download_all_files(version, sub_dir + '/' + file['name'])
             gc.collect()
@@ -174,23 +176,23 @@ class OTAUpdater:
         if self.secrets_file:
             fromPath = self.modulepath(self.main_dir + '/' + self.secrets_file)
             toPath = self.modulepath(self.new_version_dir + '/' + self.secrets_file)
-            print('Copying secrets file from {} to {}'.format(fromPath, toPath))
+            self.logging.log('Copying secrets file from {} to {}'.format(fromPath, toPath))
             self._copy_file(fromPath, toPath)
-            print('Copied secrets file from {} to {}'.format(fromPath, toPath))
+            self.logging.log('Copied secrets file from {} to {}'.format(fromPath, toPath))
 
     def _delete_old_version(self):
-        print('Deleting old version at {} ...'.format(self.modulepath(self.main_dir)))
+        self.logging.log('Deleting old version at {} ...'.format(self.modulepath(self.main_dir)))
         self._rmtree(self.modulepath(self.main_dir))
-        print('Deleted old version at {} ...'.format(self.modulepath(self.main_dir)))
+        self.logging.log('Deleted old version at {} ...'.format(self.modulepath(self.main_dir)))
 
     def _install_new_version(self):
-        print('Installing new version at {} ...'.format(self.modulepath(self.main_dir)))
+        self.logging.log('Installing new version at {} ...'.format(self.modulepath(self.main_dir)))
         if self._os_supports_rename():
             os.rename(self.modulepath(self.new_version_dir), self.modulepath(self.main_dir))
         else:
             self._copy_directory(self.modulepath(self.new_version_dir), self.modulepath(self.main_dir))
             self._rmtree(self.modulepath(self.new_version_dir))
-        print('Update installed, please reboot now')
+        self.logging.log('Update installed, please reboot now')
 
     def _rmtree(self, directory):
         for entry in os.ilistdir(directory):

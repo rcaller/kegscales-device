@@ -5,6 +5,11 @@ import socket
 
 s = socket.socket()
 class LogServer:
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(LogServer, cls).__new__(cls)
+        return cls.instance
+
     def __init__(self):
         self.conn=""
 
@@ -35,11 +40,12 @@ class LogServer:
 
 
 
-    def log(self, logline):
-         if self.conn!="":
+    def log(self, *loglines):
+        logline = "".join(str(l) for l in loglines)
+        if self.conn!="":
              try:
                  self.conn.send("<br/>" + logline)
              except OSError as e:
                  self.conn.close()
                  self.conn=""
-         print(logline)
+        print(logline)

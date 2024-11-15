@@ -23,3 +23,6 @@ def wifiConnect():
             continue
     if station.isconnected() == False:
         print("Wifi " + ssid + " not connected")
+        return False
+    else:
+        return True
