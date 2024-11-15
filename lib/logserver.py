@@ -1,7 +1,7 @@
 import time
 
 import socket
-
+from ucollections import deque
 
 s = socket.socket()
 class LogServer:
@@ -12,6 +12,7 @@ class LogServer:
 
     def __init__(self):
         self.conn=""
+        self.log_entries = deque([], 200)
 
         addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -31,6 +32,7 @@ class LogServer:
                 print('Request content = %s' % request)
                 self.conn.send('HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n')
                 self.conn.send("<head></head><body><h1>Kegscales Log</h1><p>")
+                self.conn.send("<br/>".join(self.log_entries))
 
             except OSError as e:
                 if(e.errno == 11):
@@ -41,11 +43,12 @@ class LogServer:
 
 
     def log(self, *loglines):
-        logline = "".join(str(l) for l in loglines)
+        logline = str(time.time()) +": " + "".join(str(l) for l in loglines)
         if self.conn!="":
              try:
                  self.conn.send("<br/>" + logline)
              except OSError as e:
                  self.conn.close()
                  self.conn=""
+        self.log_entries.append(logline)
         print(logline)
