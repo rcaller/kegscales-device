@@ -5,20 +5,25 @@ from ucollections import deque
 
 s = socket.socket()
 class LogServer:
+    instance=None
+    initialised = False
     def __new__(cls):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(LogServer, cls).__new__(cls)
+        if cls.instance is None:
+            cls.instance = super().__new__(cls)
         return cls.instance
 
     def __init__(self):
-        self.conn=""
-        self.log_entries = deque([], 200)
+        if self.initialised == False:
+            self.conn=""
+            self.log_entries = deque([], 200)
+            print("Initialising logging")
+            addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.setblocking(False)
+            s.bind(addr)
+            s.listen()
+            self.initialised = True
 
-        addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.setblocking(False)
-        s.bind(addr)
-        s.listen()
 
     def connect(self):
         if  self.conn == "":

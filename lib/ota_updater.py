@@ -1,6 +1,6 @@
 import os, gc
 from .httpclient import HttpClient
-from .logserver import LogServer
+import logserver
 
 
 class OTAUpdater:
@@ -18,7 +18,7 @@ class OTAUpdater:
         self.main_dir = main_dir
         self.new_version_dir = new_version_dir
         self.secrets_file = secrets_file
-        self.logging = LogServer()
+        self.logging = logserver.LogServer()
 
     def __del__(self):
         self.http_client = None
