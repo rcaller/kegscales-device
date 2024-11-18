@@ -1,10 +1,25 @@
-
-from wifi_config import ssid, password
+import json
+import os
 
 
 def wifiConnect():
     import network
+    os.chdir("/")
+    ssid=""
+    password=""
+    try:
+        with open('wifi.txt', "r", encoding="utf-8") as f:
+            wifiJson = json.load(f)
+            print(str(wifiJson))
+            ssid=wifiJson["ssid"]
+            password = wifiJson["pwd"]
 
+    except Exception as e:
+        print("Wifi read failed " + str(e))
+        return False
+    if (ssid==""):
+        print("Wifi not defined")
+        return False
     network.hostname('kegscales')
 
     station = network.WLAN(network.STA_IF)

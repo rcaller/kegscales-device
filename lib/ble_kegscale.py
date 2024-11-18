@@ -1,10 +1,13 @@
+import json
 import os
+
 import bluetooth
 import struct
 from machine import Pin, Timer
 from collections import deque
 from ble_advertising import advertising_payload
 from micropython import const
+import machine
 
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
@@ -40,6 +43,10 @@ _KEGSCALE_SETCALIBRATION = (
     bluetooth.UUID("28f273fb-9f53-45d4-852a-bfb214442d44"),
     _FLAG_WRITE,
 )
+_KEGSCALE_SETWIFI = (
+    bluetooth.UUID("28f273f8-9f53-45d4-852a-bfb214442d44"),
+    _FLAG_WRITE,
+)
 _KEGSCALE_SERVICE = (
     _KEGSCALE_UUID,
     [_KEGSCALE_REMAINING,
@@ -47,7 +54,8 @@ _KEGSCALE_SERVICE = (
      _KEGSCALE_CALIBRATION_STATUS,
      _KEGSCALE_CALIBRATION_VOLUME,
      _KEGSCALE_SETCALIBRATION,
-     _KEGSCALE_NAME],
+     _KEGSCALE_NAME,
+     _KEGSCALE_SETWIFI],
 )
 
 
@@ -58,12 +66,14 @@ class BLEKegScale:
         self._calibration_callback = None
         self._ble = ble
         self._ble.active(True)
+        ble.config(mtu=517)
+
         self._ble.irq(self._irq)
-        ((self._handle_remaining, self._handle_poured, self._handle_calibration_status, self._handle_calibration_volume, self._handle_setcalibration, self._handle_name),) = self._ble.gatts_register_services((_KEGSCALE_SERVICE,))
+        ((self._handle_remaining, self._handle_poured, self._handle_calibration_status, self._handle_calibration_volume, self._handle_setcalibration, self._handle_name, self._handle_wifi),) = self._ble.gatts_register_services((_KEGSCALE_SERVICE,))
         self._connections = set()
         self._name = self.get_name()
         self._payload = advertising_payload(name="kegscale", services=[_KEGSCALE_UUID])
-
+        self._ble.gatts_set_buffer(self._handle_wifi, 100, True)
         self._data_history = deque([0]*25, 25)
         self._pouring = False
         self._pour_start = 0
@@ -101,6 +111,8 @@ class BLEKegScale:
                     self._calibration_callback(str(data))
             elif (attr_handle == self._handle_name):
                 self.update_name(str(self._ble.gatts_read(attr_handle).decode()))
+            elif (attr_handle == self._handle_wifi):
+                self.set_wifi(str(self._ble.gatts_read(attr_handle).decode()))
 
     def is_connected(self):
         return len(self._connections) > 0
@@ -200,3 +212,15 @@ class BLEKegScale:
         led_state = False
         self.ledtimer.deinit()  # Stop the timer
         self.led.value(0)
+
+    def set_wifi(self, wifiJsonString):
+        self.logger.log("wifi json: "+wifiJsonString)
+        wifiJson = json.loads(wifiJsonString)
+        os.chdir("/")
+        try:
+            with open('wifi.txt', "w", encoding="utf-8") as f:
+                json.dump(wifiJson, f)
+                self.logger.log("Wifi saved")
+                #machine.reset()
+        except Exception as e:
+            self.logger.log("Wifi save failed " + str(e))
