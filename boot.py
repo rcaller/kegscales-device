@@ -18,7 +18,6 @@ def update():
 
 if wifiConnect():
     update()
-    pass
 
 startUp()
 

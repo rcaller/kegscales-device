@@ -18,7 +18,6 @@ ble = bluetooth.BLE()
 ks = BLEKegScale(ble, logger)
 ks.set_scales(hx)
 ks.register_calibration_callback(hx.update_calibration)
-logger.log("NEW And UPDATED!!!")
 
 while True:
     measure_end_time = time.time()+5
