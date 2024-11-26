@@ -18,6 +18,8 @@ jobs:
     - run: cd ports/rp2/modules
     - name: Check out project
       uses: actions/checkout@master
+      with:
+        path: ports/rp2/modules
     - run: ls -Al
     - run: cd ..
     - run: ls -Al
