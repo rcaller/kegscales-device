@@ -118,6 +118,7 @@ class OTAUpdater:
             versionfile.close()
 
     def get_version(self, directory, version_file_name='.version'):
+        self.logging.log('Version Dir ' + directory)
         if version_file_name in os.listdir(directory):
             with open(directory + '/' + version_file_name) as f:
                 version = f.read()
