@@ -127,6 +127,7 @@ class OTAUpdater:
             return '0.0'
         except OSError:
             self.logging.log('No source version present')
+            os.mkdir(directory)
             return '0.0'
 
     def get_latest_version(self):
