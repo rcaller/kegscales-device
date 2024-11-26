@@ -12,7 +12,6 @@ jobs:
       uses: actions/checkout@master
       with:
         repository: micropython/micropython
-    - run: cd micropython
     - run: ls -Al
     - run: git submodule update --init lib/mbedtls
     - run: make -C mpy-cross
