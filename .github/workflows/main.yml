@@ -1,0 +1,35 @@
+name: kegscales-device Image Builder
+on: [push]
+jobs:
+  Build-Image:
+    runs-on: ubuntu-latest
+    steps:
+    - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+    - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+    - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+    - run: sudo apt-get install -y git gcc-arm-none-eabi libstdc++-arm-none-eabi-newlib libnewlib-arm-none-eabi build-essential cmake python3
+    - name: Check out micropython
+      uses: actions/checkout@master
+      with:
+        repository: micropython/micropython
+    - run: ls -Al
+    - run: git submodule update --init lib/mbedtls
+    - run: make -C mpy-cross
+    - run: mkdir tmp
+    - name: Check out project
+      uses: actions/checkout@master
+      with:
+        path: tmp
+    - run: cp -r tmp/* ports/rp2/modules
+    - run: ls -Al ports/rp2/modules
+    - run: make BOARD=RPI_PICO_W submodules
+      working-directory: ports/rp2
+    - run: make BOARD=RPI_PICO_W clean
+      working-directory: ports/rp2
+    - run: make BOARD=RPI_PICO_W
+      working-directory: ports/rp2
+    - name: Archive build artifact
+      uses: actions/upload-artifact@master
+      with:
+        name: firmware
+        path: ports/rp2/build-RPI_PICO_W/firmware.uf2
