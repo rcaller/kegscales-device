@@ -18,7 +18,8 @@ jobs:
     - run: cd ports/rp2/modules
     - name: Check out project
       uses: actions/checkout@master
-    - run: cd ports/rp2
+    - run: ls -Al
+    - run: cd ..
     - run: make BOARD=RPI_PICO_W submodules
     - run: make BOARD=RPI_PICO_W clean
     - run: make BOARD=RPI_PICO_W
