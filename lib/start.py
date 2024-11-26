@@ -23,7 +23,7 @@ while True:
     measure_end_time = time.time()+5
     while(time.time() < measure_end_time):
         hx.take_measurements()
-    logger.log("Measuring")
+    logger.log("Measuring:")
     measurement = hx.measure()
     ks.update_remaining(measurement)
     logger.log("Connect attempt")
