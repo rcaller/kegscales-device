@@ -19,7 +19,7 @@ jobs:
       uses: actions/checkout@master
       with:
         path: ports/rp2/modules
-    - run: ls -Al
+    - run: ls -Al ports/rp2/modules
     - run: cd ports/rp2
     - run: ls -Al
     - run: pwd
