@@ -15,7 +15,6 @@ jobs:
     - run: ls -Al
     - run: git submodule update --init lib/mbedtls
     - run: make -C mpy-cross
-    - run: cd ports/rp2/modules
     - name: Check out project
       uses: actions/checkout@master
       with:
