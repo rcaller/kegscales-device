@@ -4,7 +4,7 @@ from machine import freq
 from ucollections import deque
 
 freq(160000000)
-from hx711 import HX711
+from lib.hx711 import HX711
 from machine import Pin
 import os
 import json
