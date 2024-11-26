@@ -20,9 +20,9 @@ jobs:
       with:
         path: ports/rp2/modules
     - run: ls -Al ports/rp2/modules
-    - run: cd ports/rp2
-    - run: ls -Al
-    - run: pwd
     - run: make BOARD=RPI_PICO_W submodules
+      working-directory: ports/rp2
     - run: make BOARD=RPI_PICO_W clean
+      working-directory: ports/rp2
     - run: make BOARD=RPI_PICO_W
+      working-directory: ports/rp2
