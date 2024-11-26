@@ -9,6 +9,7 @@ jobs:
     - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
     - run: sudo apt-get install -y git gcc-arm-none-eabi libstdc++-arm-none-eabi-newlib libnewlib-arm-none-eabi build-essential cmake python3
     - run: git clone https://github.com/micropython/micropython.git
-    - run: git submodule update --init lib/mbedtls
     - run: cd micropython
+    - run: ls -Al
+    - run: git submodule update --init lib/mbedtls
     - run: make -C mpy-cross
