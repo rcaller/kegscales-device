@@ -1,6 +1,6 @@
 import os, gc
 from .httpclient import HttpClient
-import logserver
+from lib.logserver import LogServer
 
 
 class OTAUpdater:
@@ -18,7 +18,7 @@ class OTAUpdater:
         self.main_dir = main_dir
         self.new_version_dir = new_version_dir
         self.secrets_file = secrets_file
-        self.logging = logserver.LogServer()
+        self.logging = LogServer()
 
     def __del__(self):
         self.http_client = None
@@ -95,12 +95,12 @@ class OTAUpdater:
         import network
         sta_if = network.WLAN(network.STA_IF)
         if not sta_if.isconnected():
-            self.logging.log('connecting to network...')
+            print('connecting to network...')
             sta_if.active(True)
             sta_if.connect(ssid, password)
             while not sta_if.isconnected():
                 pass
-        self.logging.log('network config: ' +str(sta_if.ifconfig()))
+        print('network config: ' +str(sta_if.ifconfig()))
 
     def _check_for_new_version(self):
         current_version = self.get_version(self.modulepath(self.main_dir))

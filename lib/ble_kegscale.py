@@ -5,7 +5,7 @@ import bluetooth
 import struct
 from machine import Pin, Timer
 from collections import deque
-from ble_advertising import advertising_payload
+from lib.ble_advertising import advertising_payload
 from micropython import const
 import machine
 
