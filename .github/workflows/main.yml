@@ -28,3 +28,8 @@ jobs:
       working-directory: ports/rp2
     - run: make BOARD=RPI_PICO_W
       working-directory: ports/rp2
+    - name: Archive build artifact
+      uses: actions/upload-artifact@master
+      with:
+        name: firmware
+        path: ports/rp2/build-RPI_PICO_W/firmware.uf2
