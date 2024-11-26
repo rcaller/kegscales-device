@@ -15,8 +15,4 @@ The project currently consists of the Raspberry Pi Pico communicating over BLE w
 This repository contains micropython code to be installed onto a Raspberry Pi Pico W microcontroller.
 
 ### Installation
-First you need to download the micropython runtime from here 
-  
-https://www.raspberrypi.com/documentation/microcontrollers/micropython.html
-
-Then use your preferred micropython dev system (Thonny, PyCharm etc) to push the code onto the board.
+Download the compiled firmware from the latest release.  Plug your raspberry pi pico w into a PC with a usb cable.  At should appear as a writable directory, simply drop the firmware into this directory, the Pico should reboot and start running (the led will start flashing after a little while).  Now scan and detect the device from the app and continue configuration from there.
