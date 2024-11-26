@@ -20,6 +20,7 @@ jobs:
       uses: actions/checkout@master
     - run: ls -Al
     - run: cd ..
+    - run: ls -Al
     - run: make BOARD=RPI_PICO_W submodules
     - run: make BOARD=RPI_PICO_W clean
     - run: make BOARD=RPI_PICO_W
