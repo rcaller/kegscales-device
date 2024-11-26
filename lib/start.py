@@ -6,8 +6,8 @@ import machine
 import ubinascii
 from lib.ble_kegscale import BLEKegScale
 from lib.hx711_kegscale import HX711KegScale
-import logserver
-logger = logserver.LogServer()
+from lib.logserver import LogServer
+logger = LogServer()
 hx = HX711KegScale(logger)
 
 
