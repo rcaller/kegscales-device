@@ -15,10 +15,12 @@ jobs:
     - run: ls -Al
     - run: git submodule update --init lib/mbedtls
     - run: make -C mpy-cross
+    - run: mkdir tmp
     - name: Check out project
       uses: actions/checkout@master
       with:
-        path: ports/rp2/modules
+        path: tmp
+    - run: cp -r tmp/ ports/rp2/modules
     - run: ls -Al ports/rp2/modules
     - run: make BOARD=RPI_PICO_W submodules
       working-directory: ports/rp2
