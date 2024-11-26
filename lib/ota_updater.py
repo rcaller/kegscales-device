@@ -119,11 +119,15 @@ class OTAUpdater:
 
     def get_version(self, directory, version_file_name='.version'):
         self.logging.log('Version Dir ' + directory)
-        if version_file_name in os.listdir(directory):
-            with open(directory + '/' + version_file_name) as f:
-                version = f.read()
-                return version
-        return '0.0'
+        try:
+            if   version_file_name in os.listdir(directory):
+                with open(directory + '/' + version_file_name) as f:
+                    version = f.read()
+                    return version
+            return '0.0'
+        except OSError:
+            self.logging.log('No source version present')
+            return '0.0'
 
     def get_latest_version(self):
         latest_release = self.http_client.get(
