@@ -221,6 +221,6 @@ class BLEKegScale:
             with open('wifi.txt', "w", encoding="utf-8") as f:
                 json.dump(wifiJson, f)
                 self.logger.log("Wifi saved")
-                #machine.reset()
+                machine.reset()
         except Exception as e:
             self.logger.log("Wifi save failed " + str(e))

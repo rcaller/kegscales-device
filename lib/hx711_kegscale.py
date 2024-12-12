@@ -116,6 +116,7 @@ class HX711KegScale:
             return
         if abs(((new - avg) / avg))<0.25 or abs(new-avg)<100:
             self.rollingArray.append(new)
+            self.tempRollingArray = deque([], 200)
         else:
             self.logger.log("Rejected "+str(new) + " - " + str(avg) + " - " + str(abs(((new - avg) / avg))))
             self.tempRollingArray.append(new)
