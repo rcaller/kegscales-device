@@ -106,9 +106,9 @@ class HX711KegScale:
         return self.calibrationState
 
     def take_measurements(self):
-        new = int((self.volume / self.full) * (self.hx.read() - self.zero))
-        if new == 0:
-            self.logger.log("Zero rejected" + str(new))
+        new = ((self.volume / self.full) * (self.hx.read() - self.zero))
+        if new == 0.0:
+            self.logger.log("Zero rejected " + str(new))
             time.sleep(0.05)
             return
         if (len(self.rollingArray) < 20):
